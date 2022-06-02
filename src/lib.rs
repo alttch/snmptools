@@ -138,7 +138,6 @@ pub unsafe fn get_oid(name: &str) -> Result<der_parser::oid::Oid, Error> {
         der_parser::oid::Oid::from(&n_oid[..len])
             .map_err(|_| Error::failed("Unable to create SNMP OID"))
     } else {
-        dbg!(res, len);
         Err(Error::failed("Unable to get SNMP OID"))
     }
 }
