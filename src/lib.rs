@@ -152,6 +152,7 @@ mod test {
         }
         let snmp_oid = der_parser::oid::Oid::from(&[1, 3, 6, 1, 4, 1, 2, 6, 201, 3]).unwrap();
         let name = unsafe { get_name(&snmp_oid).unwrap() };
+        assert_eq!(name, "IBM-CPS-MIB::cpsSystemSendTrap");
         let snmp_oid2 = unsafe { get_oid(&name) }.unwrap();
         assert_eq!(snmp_oid, snmp_oid2);
     }
