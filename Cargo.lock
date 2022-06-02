@@ -128,7 +128,7 @@ dependencies = [
 
 [[package]]
 name = "snmptools"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "der-parser",
  "netsnmp-sys",
