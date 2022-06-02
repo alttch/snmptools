@@ -1,0 +1,18 @@
+[package]
+name = "snmptools"
+version = "0.0.1"
+edition = "2021"
+authors = ["Sergei S. <div@altertech.com>"]
+license = "Apache-2.0"
+description = "SNMP common tools"
+repository = "https://github.com/alttch/snmptools"
+readme = "README.md"
+keywords = ["snmp", "mib", "tools"]
+
+[lib]
+name = "snmptools"
+path = "src/lib.rs"
+
+[dependencies]
+der-parser = { version = "6.0.0", features = ["bigint"] }
+netsnmp-sys = "0.1.1"
