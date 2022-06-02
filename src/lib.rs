@@ -179,12 +179,12 @@ pub unsafe fn get_name(snmp_oid: &der_parser::oid::Oid) -> Result<String, Error>
     }
     #[cfg(not(feature = "dynamic"))]
     netsnmp_sys::snprint_objid(
-        name_buf.as_mut_ptr(),
+        name_buf.as_mut_ptr() as *mut u8,
         MAX_NAME_LEN,
         n_oid.as_slice().as_ptr(),
         n_len,
     );
-    let name = CStr::from_ptr(name_buf.as_mut_ptr());
+    let name = CStr::from_ptr(name_buf.as_mut_ptr() as *const u8);
     Ok(name.to_string_lossy().to_string())
 }
 
