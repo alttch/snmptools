@@ -50,10 +50,21 @@ impl fmt::Display for Error {
 
 const MAX_NAME_LEN: usize = 1024;
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct Config<'a> {
+    app_name: &'a str,
     mibs: &'a [&'a str],
     mib_dirs: &'a [&'a str],
+}
+
+impl<'a> Default for Config<'a> {
+    fn default() -> Self {
+        Self {
+            app_name: env!("CARGO_CRATE_NAME"),
+            mibs: <_>::default(),
+            mib_dirs: <_>::default(),
+        }
+    }
 }
 
 impl<'a> Config<'a> {
@@ -69,6 +80,11 @@ impl<'a> Config<'a> {
     #[inline]
     pub fn mib_dirs(mut self, mib_dirs: &'a [&'a str]) -> Self {
         self.mib_dirs = mib_dirs;
+        self
+    }
+    #[inline]
+    pub fn app_name(mut self, name: &'a str) -> Self {
+        self.app_name = name;
         self
     }
 }
@@ -87,7 +103,7 @@ pub unsafe fn init(config: &Config) {
     if !config.mib_dirs.is_empty() {
         env::set_var("MIBDIRS", config.mib_dirs.join(":"));
     }
-    let app_name: CString = CString::new("eva-common").unwrap();
+    let app_name: CString = CString::new(config.app_name).unwrap();
     netsnmp_sys::init_snmp(app_name.as_ptr());
 }
 
