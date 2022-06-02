@@ -88,7 +88,7 @@ impl<'a> Config<'a> {
 ///
 /// # Panics
 ///
-/// Should not panic
+/// Will panic if app_name contains a zero-char
 pub unsafe fn init(config: &Config) {
     if !config.mibs.is_empty() {
         env::set_var("MIBS", config.mibs.join(":"));
