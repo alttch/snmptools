@@ -1,4 +1,7 @@
 #[cfg(not(feature = "dynamic"))]
+extern crate netsnmp_sys_nocrypto;
+
+#[cfg(not(feature = "dynamic"))]
 use netsnmp_sys_nocrypto as netsnmp_sys;
 #[cfg(feature = "dynamic")]
 use once_cell::sync::OnceCell;
@@ -140,6 +143,10 @@ pub unsafe fn init(config: &Config) -> Result<(), Error> {
 /// # Safety
 ///
 /// Should not have safety problems unless netsnmp bugs are found
+///
+/// # Panics
+///
+/// Will panic if not initialized
 pub unsafe fn get_name(snmp_oid: &der_parser::oid::Oid) -> Result<String, Error> {
     #[cfg(not(feature = "dynamic"))]
     const MAX_OID_LEN: usize = netsnmp_sys::MAX_OID_LEN;
@@ -180,7 +187,7 @@ pub unsafe fn get_name(snmp_oid: &der_parser::oid::Oid) -> Result<String, Error>
     }
     #[cfg(not(feature = "dynamic"))]
     netsnmp_sys::snprint_objid(
-        name_buf.as_mut_ptr() as *mut c_char,
+        name_buf.as_mut_ptr().cast::<c_char>(),
         MAX_NAME_LEN,
         n_oid.as_slice().as_ptr(),
         n_len,
@@ -192,6 +199,10 @@ pub unsafe fn get_name(snmp_oid: &der_parser::oid::Oid) -> Result<String, Error>
 /// # Safety
 ///
 /// Should not have safety problems unless netsnmp bugs are found
+///
+/// # Panics
+///
+/// Will panic if not initialized
 pub unsafe fn get_oid(name: &str) -> Result<der_parser::oid::Oid, Error> {
     #[cfg(not(feature = "dynamic"))]
     const MAX_OID_LEN: usize = netsnmp_sys::MAX_OID_LEN;
