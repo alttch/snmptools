@@ -1,3 +1,5 @@
+#[cfg(not(feature = "dynamic"))]
+use netsnmp_sys_nocrypto as netsnmp_sys;
 #[cfg(feature = "dynamic")]
 use once_cell::sync::OnceCell;
 use std::env;

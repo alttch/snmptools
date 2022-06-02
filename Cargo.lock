@@ -67,10 +67,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
-name = "netsnmp-sys"
-version = "0.1.1"
+name = "netsnmp-sys-nocrypto"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "631b53a54f07e7f8e390ba494a5fa4cac4c92abed56506025714c62a237c27c3"
+checksum = "d0e2fafd1d3b0e336426e6fd4d11b7ffe45d2c492d9a1f0c4ccdbea6bc36397f"
 dependencies = [
  "libc",
 ]
@@ -150,11 +150,11 @@ dependencies = [
 
 [[package]]
 name = "snmptools"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "der-parser",
  "libloading",
- "netsnmp-sys",
+ "netsnmp-sys-nocrypto",
  "once_cell",
 ]
 
