@@ -8,19 +8,6 @@ pub enum ErrorKind {
     InvalidData,
 }
 
-impl fmt::Display for ErrorKind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                ErrorKind::Failed => "Function failed",
-                ErrorKind::InvalidData => "Invalid data",
-            }
-        )
-    }
-}
-
 #[derive(Debug)]
 pub struct Error {
     kind: ErrorKind,
@@ -28,23 +15,29 @@ pub struct Error {
 }
 
 impl Error {
-    fn invalid_data(msg: impl fmt::Display) -> Self {
+    #[inline]
+    pub fn invalid_data(msg: impl fmt::Display) -> Self {
         Self {
             kind: ErrorKind::InvalidData,
             message: msg.to_string(),
         }
     }
-    fn failed(msg: impl fmt::Display) -> Self {
+    #[inline]
+    pub fn failed(msg: impl fmt::Display) -> Self {
         Self {
             kind: ErrorKind::Failed,
             message: msg.to_string(),
         }
     }
+    #[inline]
+    pub fn kind(&self) -> ErrorKind {
+        self.kind
+    }
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}: {}", self.kind, self.message)
+        write!(f, "{}", self.message)
     }
 }
 
