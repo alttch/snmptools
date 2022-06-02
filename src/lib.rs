@@ -14,6 +14,8 @@ pub struct Error {
     message: String,
 }
 
+impl std::error::Error for Error {}
+
 impl Error {
     #[inline]
     pub fn invalid_data(msg: impl fmt::Display) -> Self {
@@ -134,11 +136,11 @@ pub unsafe fn get_oid(name: &str) -> Result<der_parser::oid::Oid, Error> {
     let c_name = CString::new(name).map_err(Error::invalid_data)?;
     let mut len = netsnmp_sys::MAX_OID_LEN;
     let res = netsnmp_sys::get_node(c_name.as_ptr(), n_oid.as_mut_ptr(), &mut len);
-    if res == 1 {
+    if res == 0 {
+        Err(Error::failed("Unable to get SNMP OID"))
+    } else {
         der_parser::oid::Oid::from(&n_oid[..len])
             .map_err(|_| Error::failed("Unable to create SNMP OID"))
-    } else {
-        Err(Error::failed("Unable to get SNMP OID"))
     }
 }
 
