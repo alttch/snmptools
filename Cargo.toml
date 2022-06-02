@@ -9,6 +9,12 @@ repository = "https://github.com/alttch/snmptools"
 readme = "README.md"
 keywords = ["snmp", "mib", "tools"]
 
+[package.metadata.docs.rs]
+features = ["static"]
+
+[package.metadata.playground]
+features = ["static"]
+
 [lib]
 name = "snmptools"
 path = "src/lib.rs"
