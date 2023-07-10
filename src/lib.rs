@@ -227,7 +227,8 @@ pub unsafe fn get_oid(name: &str) -> Result<der_parser::oid::Oid, Error> {
     if res == 0 {
         Err(Error::failed("Unable to get SNMP OID"))
     } else {
-        der_parser::oid::Oid::from(&n_oid[..len])
+        #[allow(clippy::unnecessary_cast)]
+        der_parser::oid::Oid::from(&n_oid[..len].iter().map(|v| *v as u64).collect::<Vec<u64>>())
             .map_err(|_| Error::failed("Unable to create SNMP OID"))
     }
 }
