@@ -1,6 +1,8 @@
+#![ doc = include_str!( concat!( env!( "CARGO_MANIFEST_DIR" ), "/", "README.md" ) ) ]
 #[cfg(not(feature = "dynamic"))]
 extern crate netsnmp_sys_nocrypto;
 
+pub use der_parser::oid::Oid;
 #[cfg(not(feature = "dynamic"))]
 use netsnmp_sys_nocrypto as netsnmp_sys;
 #[cfg(feature = "dynamic")]
@@ -67,7 +69,7 @@ pub struct Config<'a> {
     mib_dirs: &'a [&'a str],
 }
 
-impl<'a> Default for Config<'a> {
+impl Default for Config<'_> {
     fn default() -> Self {
         Self {
             #[cfg(feature = "dynamic")]
@@ -114,7 +116,7 @@ impl<'a> Config<'a> {
 /// # Panics
 ///
 /// Will panic if app_name contains a zero-char
-pub unsafe fn init(config: &Config) -> Result<(), Error> {
+pub fn init(config: &Config) -> Result<(), Error> {
     if !config.mibs.is_empty() {
         env::set_var("MIBS", config.mibs.join(":"));
     }
@@ -123,7 +125,7 @@ pub unsafe fn init(config: &Config) -> Result<(), Error> {
     }
     let app_name: CString = CString::new(config.app_name).unwrap();
     #[cfg(feature = "dynamic")]
-    {
+    unsafe {
         if config.lib_path.is_empty() {
             return Err(Error::failed("lib path not set"));
         }
@@ -135,7 +137,9 @@ pub unsafe fn init(config: &Config) -> Result<(), Error> {
     }
     #[cfg(not(feature = "dynamic"))]
     {
-        netsnmp_sys::init_snmp(app_name.as_ptr());
+        unsafe {
+            netsnmp_sys::init_snmp(app_name.as_ptr());
+        }
     }
     Ok(())
 }
@@ -147,7 +151,7 @@ pub unsafe fn init(config: &Config) -> Result<(), Error> {
 /// # Panics
 ///
 /// Will panic if not initialized
-pub unsafe fn get_name(snmp_oid: &der_parser::oid::Oid) -> Result<String, Error> {
+pub fn get_name(snmp_oid: &Oid) -> Result<String, Error> {
     #[cfg(not(feature = "dynamic"))]
     const MAX_OID_LEN: usize = netsnmp_sys::MAX_OID_LEN;
 
@@ -168,7 +172,7 @@ pub unsafe fn get_name(snmp_oid: &der_parser::oid::Oid) -> Result<String, Error>
     }
     let mut name_buf = [0_i8; MAX_NAME_LEN];
     #[cfg(feature = "dynamic")]
-    {
+    unsafe {
         let lib = NETSNMP.get().unwrap();
         let snprint_objid: libloading::Symbol<
             unsafe extern "C" fn(
@@ -186,13 +190,15 @@ pub unsafe fn get_name(snmp_oid: &der_parser::oid::Oid) -> Result<String, Error>
         );
     }
     #[cfg(not(feature = "dynamic"))]
-    netsnmp_sys::snprint_objid(
-        name_buf.as_mut_ptr().cast::<c_char>(),
-        MAX_NAME_LEN,
-        n_oid.as_slice().as_ptr(),
-        n_len,
-    );
-    let name = CStr::from_ptr(name_buf.as_mut_ptr() as *const c_char);
+    unsafe {
+        netsnmp_sys::snprint_objid(
+            name_buf.as_mut_ptr().cast::<c_char>(),
+            MAX_NAME_LEN,
+            n_oid.as_slice().as_ptr(),
+            n_len,
+        );
+    }
+    let name = unsafe { CStr::from_ptr(name_buf.as_mut_ptr().cast_const()) };
     Ok(name.to_string_lossy().to_string())
 }
 
@@ -203,7 +209,7 @@ pub unsafe fn get_name(snmp_oid: &der_parser::oid::Oid) -> Result<String, Error>
 /// # Panics
 ///
 /// Will panic if not initialized
-pub unsafe fn get_oid(name: &str) -> Result<der_parser::oid::Oid, Error> {
+pub fn get_oid(name: &str) -> Result<Oid, Error> {
     #[cfg(not(feature = "dynamic"))]
     const MAX_OID_LEN: usize = netsnmp_sys::MAX_OID_LEN;
 
@@ -215,7 +221,7 @@ pub unsafe fn get_oid(name: &str) -> Result<der_parser::oid::Oid, Error> {
     let c_name = CString::new(name).map_err(Error::invalid_data)?;
     let mut len = MAX_OID_LEN;
     #[cfg(feature = "dynamic")]
-    let res = {
+    let res = unsafe {
         let lib = NETSNMP.get().unwrap();
         let get_node: libloading::Symbol<
             unsafe extern "C" fn(name: *const c_char, oid: *mut u64, oid_len: *mut usize) -> i32,
@@ -223,39 +229,37 @@ pub unsafe fn get_oid(name: &str) -> Result<der_parser::oid::Oid, Error> {
         get_node(c_name.as_ptr(), n_oid.as_mut_ptr(), &mut len)
     };
     #[cfg(not(feature = "dynamic"))]
-    let res = { netsnmp_sys::get_node(c_name.as_ptr(), n_oid.as_mut_ptr(), &mut len) };
+    let res = unsafe { netsnmp_sys::get_node(c_name.as_ptr(), n_oid.as_mut_ptr(), &mut len) };
     if res == 0 {
         Err(Error::failed("Unable to get SNMP OID"))
     } else {
         #[allow(clippy::unnecessary_cast)]
-        der_parser::oid::Oid::from(&n_oid[..len].iter().map(|v| *v as u64).collect::<Vec<u64>>())
+        Oid::from(&n_oid[..len].iter().map(|v| *v as u64).collect::<Vec<u64>>())
             .map_err(|_| Error::failed("Unable to create SNMP OID"))
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::{get_name, get_oid, init, Config};
+    use super::{get_name, get_oid, init, Config, Oid};
     #[cfg(not(feature = "dynamic"))]
     #[test]
     fn test_mib() {
-        unsafe {
-            init(&Config::new().mibs(&["./ibmConvergedPowerSystems.mib"])).unwrap();
-        }
-        let snmp_oid = der_parser::oid::Oid::from(&[1, 3, 6, 1, 4, 1, 2, 6, 201, 3]).unwrap();
-        let name = unsafe { get_name(&snmp_oid).unwrap() };
+        init(&Config::new().mibs(&["./ibmConvergedPowerSystems.mib"])).unwrap();
+        let snmp_oid = Oid::from(&[1, 3, 6, 1, 4, 1, 2, 6, 201, 3]).unwrap();
+        let name = get_name(&snmp_oid).unwrap();
         assert_eq!(name, "IBM-CPS-MIB::cpsSystemSendTrap");
-        let snmp_oid2 = unsafe { get_oid(&name) }.unwrap();
+        let snmp_oid2 = get_oid(&name).unwrap();
         assert_eq!(snmp_oid, snmp_oid2);
     }
     #[cfg(feature = "dynamic")]
     #[test]
     fn test_mib_dynamic() {
-        unsafe { init(&Config::new().mibs(&["./ibmConvergedPowerSystems.mib"])) }.unwrap();
-        let snmp_oid = der_parser::oid::Oid::from(&[1, 3, 6, 1, 4, 1, 2, 6, 201, 3]).unwrap();
-        let name = unsafe { get_name(&snmp_oid).unwrap() };
+        init(&Config::new().mibs(&["./ibmConvergedPowerSystems.mib"])).unwrap();
+        let snmp_oid = Oid::from(&[1, 3, 6, 1, 4, 1, 2, 6, 201, 3]).unwrap();
+        let name = get_name(&snmp_oid).unwrap();
         assert_eq!(name, "IBM-CPS-MIB::cpsSystemSendTrap");
-        let snmp_oid2 = unsafe { get_oid(&name) }.unwrap();
+        let snmp_oid2 = get_oid(&name).unwrap();
         assert_eq!(snmp_oid, snmp_oid2);
     }
 }
