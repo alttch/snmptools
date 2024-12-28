@@ -169,9 +169,7 @@ pub fn get_name(snmp_oid: &Oid) -> Result<String, Error> {
         if n > MAX_OID_LEN {
             return Err(Error::invalid_data("SNMP OID too long"));
         }
-        n_oid[n] = val
-            .try_into()
-            .map_err(|e| Error::failed(format!("Invalid SNMP OID: {}", e)))?;
+        n_oid[n] = val;
         n_len += 1;
     }
     let mut name_buf = [0_i8; MAX_NAME_LEN];
@@ -202,7 +200,7 @@ pub fn get_name(snmp_oid: &Oid) -> Result<String, Error> {
             n_len,
         );
     }
-    let name = unsafe { CStr::from_ptr(name_buf.as_mut_ptr().cast_const()) };
+    let name = unsafe { CStr::from_ptr(name_buf.as_mut_ptr().cast_const().cast::<c_char>()) };
     Ok(name.to_string_lossy().to_string())
 }
 
