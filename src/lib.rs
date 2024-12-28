@@ -161,7 +161,11 @@ pub fn get_name(snmp_oid: &Oid) -> Result<String, Error> {
     let mut n_oid: [netsnmp_sys::oid; MAX_OID_LEN] = [0; MAX_OID_LEN];
 
     let mut n_len = 0;
-    for (n, val) in snmp_oid.iter_bigint().enumerate() {
+    for (n, val) in snmp_oid
+        .iter()
+        .ok_or(Error::invalid_data("SNMP OID is empty"))?
+        .enumerate()
+    {
         if n > MAX_OID_LEN {
             return Err(Error::invalid_data("SNMP OID too long"));
         }
