@@ -2,7 +2,7 @@
 #[cfg(not(feature = "dynamic"))]
 extern crate netsnmp_sys_nocrypto;
 
-pub use der_parser::oid::Oid;
+pub use asn1_rs::Oid;
 #[cfg(not(feature = "dynamic"))]
 use netsnmp_sys_nocrypto as netsnmp_sys;
 #[cfg(feature = "dynamic")]
