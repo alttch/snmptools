@@ -72,8 +72,10 @@ pub struct Config<'a> {
 impl Default for Config<'_> {
     fn default() -> Self {
         Self {
-            #[cfg(feature = "dynamic")]
+            #[cfg(all(feature = "dynamic", target_os = "linux"))]
             lib_path: "libnetsnmp.so",
+            #[cfg(all(feature = "dynamic", target_os = "macos"))]
+            lib_path: "libnetsnmp.dylib",
             app_name: env!("CARGO_CRATE_NAME"),
             mibs: <_>::default(),
             mib_dirs: <_>::default(),
@@ -211,7 +213,7 @@ pub fn get_name(snmp_oid: &Oid) -> Result<String, Error> {
 /// # Panics
 ///
 /// Will panic if not initialized
-pub fn get_oid(name: &str) -> Result<Oid, Error> {
+pub fn get_oid(name: &'_ str) -> Result<Oid<'_>, Error> {
     #[cfg(not(feature = "dynamic"))]
     const MAX_OID_LEN: usize = netsnmp_sys::MAX_OID_LEN;
 
@@ -244,6 +246,7 @@ pub fn get_oid(name: &str) -> Result<Oid, Error> {
 #[cfg(test)]
 mod test {
     use super::{get_name, get_oid, init, Config, Oid};
+
     #[cfg(not(feature = "dynamic"))]
     #[test]
     fn test_mib() {
