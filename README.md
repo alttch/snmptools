@@ -5,21 +5,24 @@ not Rust-native yet.
 
 Methods:
 
-* Converts SNMP OIDs to MIB names and vice-versa
+- Converts SNMP OIDs to MIB names and vice-versa
 
 Required crate features:
 
-* **static** (default) - compiles the binary with libnetsnmp.so dep or compile
+- **static** (default) - compiles the binary with libnetsnmp.so dep or compile
   static lib inside (a bit faster)
 
-* **dynamic** - loads libnetsnmp.so dynamically (more cross-platform)
+- **dynamic** - loads libnetsnmp.so or libnetsnmp.dylib dynamically (more cross-platform, not support windows system)
 
 ## Example
 
 Prepare the system
 
 ```shell
+# Linux
 apt-get install libsnmp-dev snmp-mibs-downloader
+# MacOS
+brew install net-snmp
 ```
 
 ```rust
