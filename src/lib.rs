@@ -132,7 +132,8 @@ pub fn init(config: &Config) -> Result<(), Error> {
             return Err(Error::failed("lib path not set"));
         }
         let lib = libloading::Library::new(config.lib_path).map_err(Error::failed)?;
-        let init: libloading::Symbol<unsafe extern "C" fn(name: *const c_char)> = lib.get(b"init_snmp").map_err(Error::failed)?;
+        let init: libloading::Symbol<unsafe extern "C" fn(name: *const c_char)> =
+            lib.get(b"init_snmp").map_err(Error::failed)?;
         init(app_name.as_ptr());
         NETSNMP.set(lib).unwrap();
     }
@@ -162,7 +163,11 @@ pub fn get_name(snmp_oid: &Oid) -> Result<String, Error> {
     let mut n_oid: [netsnmp_sys::oid; MAX_OID_LEN] = [0; MAX_OID_LEN];
 
     let mut n_len = 0;
-    for (n, val) in snmp_oid.iter().ok_or(Error::invalid_data("SNMP OID is empty"))?.enumerate() {
+    for (n, val) in snmp_oid
+        .iter()
+        .ok_or(Error::invalid_data("SNMP OID is empty"))?
+        .enumerate()
+    {
         if n > MAX_OID_LEN {
             return Err(Error::invalid_data("SNMP OID too long"));
         }
@@ -173,13 +178,29 @@ pub fn get_name(snmp_oid: &Oid) -> Result<String, Error> {
     #[cfg(feature = "dynamic")]
     unsafe {
         let lib = NETSNMP.get().unwrap();
-        let snprint_objid: libloading::Symbol<unsafe extern "C" fn(buf: *mut c_char, buf_len: usize, objid: *const u64, objidlen: usize)> =
-            lib.get(b"snprint_objid").map_err(Error::failed)?;
-        snprint_objid(name_buf.as_mut_ptr(), MAX_NAME_LEN, n_oid.as_slice().as_ptr(), n_len);
+        let snprint_objid: libloading::Symbol<
+            unsafe extern "C" fn(
+                buf: *mut c_char,
+                buf_len: usize,
+                objid: *const u64,
+                objidlen: usize,
+            ),
+        > = lib.get(b"snprint_objid").map_err(Error::failed)?;
+        snprint_objid(
+            name_buf.as_mut_ptr(),
+            MAX_NAME_LEN,
+            n_oid.as_slice().as_ptr(),
+            n_len,
+        );
     }
     #[cfg(not(feature = "dynamic"))]
     unsafe {
-        netsnmp_sys::snprint_objid(name_buf.as_mut_ptr().cast::<c_char>(), MAX_NAME_LEN, n_oid.as_slice().as_ptr(), n_len);
+        netsnmp_sys::snprint_objid(
+            name_buf.as_mut_ptr().cast::<c_char>(),
+            MAX_NAME_LEN,
+            n_oid.as_slice().as_ptr(),
+            n_len,
+        );
     }
     let name = unsafe { CStr::from_ptr(name_buf.as_mut_ptr().cast_const().cast::<c_char>()) };
     Ok(name.to_string_lossy().to_string())
@@ -206,8 +227,9 @@ pub fn get_oid(name: &'_ str) -> Result<Oid<'_>, Error> {
     #[cfg(feature = "dynamic")]
     let res = unsafe {
         let lib = NETSNMP.get().unwrap();
-        let get_node: libloading::Symbol<unsafe extern "C" fn(name: *const c_char, oid: *mut u64, oid_len: *mut usize) -> i32> =
-            lib.get(b"get_node").map_err(Error::failed)?;
+        let get_node: libloading::Symbol<
+            unsafe extern "C" fn(name: *const c_char, oid: *mut u64, oid_len: *mut usize) -> i32,
+        > = lib.get(b"get_node").map_err(Error::failed)?;
         get_node(c_name.as_ptr(), n_oid.as_mut_ptr(), &mut len)
     };
     #[cfg(not(feature = "dynamic"))]
@@ -216,7 +238,8 @@ pub fn get_oid(name: &'_ str) -> Result<Oid<'_>, Error> {
         Err(Error::failed("Unable to get SNMP OID"))
     } else {
         #[allow(clippy::unnecessary_cast)]
-        Oid::from(&n_oid[..len].iter().map(|v| *v as u64).collect::<Vec<u64>>()).map_err(|_| Error::failed("Unable to create SNMP OID"))
+        Oid::from(&n_oid[..len].iter().map(|v| *v as u64).collect::<Vec<u64>>())
+            .map_err(|_| Error::failed("Unable to create SNMP OID"))
     }
 }
 
